@@ -7,13 +7,14 @@ require 'active_shipping/shipping/carriers/kunaki'
 require 'active_shipping/shipping/carriers/canada_post'
 require 'active_shipping/shipping/carriers/new_zealand_post'
 require 'active_shipping/shipping/carriers/canada_post_pws'
+require 'active_shipping/shipping/carriers/on_trac'
 
 module ActiveMerchant
   module Shipping
     module Carriers
       class <<self
         def all
-          [BogusCarrier, UPS, USPS, FedEx, Shipwire, Kunaki, CanadaPost, NewZealandPost, CanadaPostPWS]
+          [BogusCarrier, UPS, USPS, FedEx, Shipwire, Kunaki, CanadaPost, NewZealandPost, CanadaPostPWS, OnTrac]
         end
       end
     end
