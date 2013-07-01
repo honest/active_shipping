@@ -3,7 +3,7 @@ module ActiveMerchant
     class OnTrac < Carrier
       cattr_reader :name
       cattr_reader :label_type
-
+      
       @@name = "On Trac"
 
       TEST_URL = 'https://www.shipontrac.net/OnTracTestWebServices/OnTracServices.svc'
@@ -110,19 +110,20 @@ module ActiveMerchant
       end
 
       def build_packages(origin, destination, packages, options = {})
+
         packages.map do |package|
           dimensions = [:length, :width, :height].map{|axis| package.inches(axis) }.join('x')
           data = [
-            SecureRandom.uuid, #unique id
+            options[:id] || SecureRandom.uuid, #unique id
             origin.postal_code, # origin postal code
             destination.postal_code, # destination postal code
-            false, # residential
-            '0.00', # COD
-            false, # Saturday Delivery
+            options[:residential] || false, # residential
+            options[:cod] || '0.00', # COD
+            options[:saturday_delivery] || false, # Saturday Delivery
             package.value || 0, # declared value
             package.lbs, # weight
             dimensions, # dimensions
-            'S', # service S – Sunrise, G – Gold, H – Palletized Freight, C – OnTrac Ground
+            options[:service] || 'C', # service S – Sunrise, G – Gold, H – Palletized Freight, C – OnTrac Ground
           ]
           data.join(';')
         end.join(',')
@@ -144,7 +145,7 @@ module ActiveMerchant
         xml.OnTracShipmentRequest do
           xml.Shipments do
             xml.Shipment do
-              xml.UID(SecureRandom.uuid)
+              xml.UID(options[:id] || SecureRandom.uuid)
               xml.shipper do
                 xml.Name(origin.name)
                 xml.Addr1(origin.address1)
@@ -167,15 +168,19 @@ module ActiveMerchant
                 xml.Contact
                 xml.Phone(destination.phone)
               end
-              xml.Service('S')
-              xml.SignatureRequired(false)
-              xml.Residential(false)
-              xml.SaturdayDel(false)
+              xml.Service(options[:service] || 'C')
+              xml.SignatureRequired(options[:signatured_required] || false)
+              xml.Residential(options[:residential] || false)
+              xml.SaturdayDel(options[:saturday_delivery] || false)
               xml.Declared(package.value || 0)
-              xml.COD(0)
-              xml.CODType('NONE')
+              xml.COD(options[:cod])
+              xml.CODType(options[:cod_type] || 'None')
               xml.Weight(package.lbs)
-              xml.BillTo(0)
+              xml.BillTo(options[:bill_to] || 0)
+              xml.Instructions(options[:instructions] || '')
+              xml.Reference(options[:reference])
+              xml.Reference2
+              xml.Reference3
               xml.Tracking
               xml.ShipEmail
               xml.DelEmail
@@ -185,11 +190,7 @@ module ActiveMerchant
                 xml.Height(package.inches(:height))
               end
               xml.LabelType(build_label_type(@options.merge(options)))
-              xml.ShipDate(Time.now.strftime('%Y-%m-%d'))
-              xml.Instructions(options[:instructions])
-              xml.Reference(options[:reference])
-              xml.Reference2(options[:reference2])
-              xml.Reference3(options[:reference3])
+              xml.ShipDate(options[:ship_date] || Time.now.strftime('%Y-%m-%d'))
             end
           end
         end
