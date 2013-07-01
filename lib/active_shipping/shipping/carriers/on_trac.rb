@@ -108,7 +108,6 @@ module ActiveMerchant
       end
 
       def build_packages(origin, destination, packages, options = {})
-
         packages.map do |package|
           dimensions = [:length, :width, :height].map{|axis| package.inches(axis) }.join('x')
           data = [
@@ -160,8 +159,8 @@ module ActiveMerchant
               xml.Residential(options[:residential] || false)
               xml.SaturdayDel(options[:saturday_delivery] || false)
               xml.Declared(package.value || 0)
-              xml.COD(options[:cod])
-              xml.CODType(options[:cod_type] || 'None')
+              xml.COD(options[:cod]|| 0.0)
+              xml.CODType(options[:cod_type] || 'NONE')
               xml.Weight(package.lbs)
               xml.BillTo(options[:bill_to] || 0)
               xml.Instructions(options[:instructions] || '')
