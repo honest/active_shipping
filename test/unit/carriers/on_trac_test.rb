@@ -2,23 +2,23 @@ require "test_helper"
 
 class OnTracTest < Test::Unit::TestCase
   def setup
-    @carrier = OnTrac.new(account: 37, password: 'testpass', test: true)
+    @carrier = OnTrac.new(:account => 37, :password => 'testpass', :test => true)
     @packages  = TestFixtures.packages
     @locations = TestFixtures.locations
     @beverly_hills = @locations[:beverly_hills]
     @old_honest = Location.new({
-      address1: "1550 17th Street",
-      city: "Santa Monica",
-      state: "CA",
-      postal_code: "90404",
-      country: 'US'
+      :address1 => "1550 17th Street",
+      :city => "Santa Monica",
+      :state => "CA",
+      :postal_code => "90404",
+      :country => 'US'
     })
     @chocolate = @packages[:chocolate_stuff]
   end
 
   def test_invalid_rate_credentials
     mock_response = xml_fixture('on_trac/invalid_credentials')
-    @carrier = OnTrac.new(account: 37, password: 'badpass', test: true)
+    @carrier = OnTrac.new(:account => 37, :password => 'badpass', :test => true)
     assert_raise ActiveMerchant::Shipping::ResponseError do
       @carrier.expects(:ssl_get).returns(mock_response)
       @carrier.find_rates(@beverly_hills, @old_honest, [@chocolate])
@@ -39,7 +39,7 @@ class OnTracTest < Test::Unit::TestCase
 
   def test_find_rates_error
     mock_response = xml_fixture('on_trac/rates_error')
-    @dishonest = Location.new(@old_honest.to_hash.merge(postal_code: 'ABCDE'))
+    @dishonest = Location.new(@old_honest.to_hash.merge(:postal_code => 'ABCDE'))
     assert_raise ActiveMerchant::Shipping::ResponseError do
       @carrier.expects(:ssl_get).returns(mock_response)
       @carrier.find_rates(@beverly_hills, @dishonest, [@chocolate])
@@ -81,7 +81,7 @@ class OnTracTest < Test::Unit::TestCase
 
   def test_create_shipment_error
     mock_response = xml_fixture('on_trac/shipment_error')
-    @dishonest = Location.new(@old_honest.to_hash.merge(postal_code: 'ABCDE'))
+    @dishonest = Location.new(@old_honest.to_hash.merge(:postal_code => 'ABCDE'))
     assert_raise ActiveMerchant::Shipping::ResponseError do
       @carrier.expects(:ssl_post).returns(mock_response)
       @carrier.create_shipment(@beverly_hills, @dishonest, @chocolate)
@@ -100,7 +100,7 @@ class OnTracTest < Test::Unit::TestCase
   def test_find_tracking_details
     mock_response = xml_fixture('on_trac/tracking_details')
     @carrier.expects(:ssl_get).returns(mock_response)
-    resp = @carrier.find_tracking_info(['D10010590135856'], type: :details)
+    resp = @carrier.find_tracking_info(['D10010590135856'], :type => :details)
     assert resp.success?
     assert resp.test
     assert_equal resp.message, "Successfully retrieved shipment details"
