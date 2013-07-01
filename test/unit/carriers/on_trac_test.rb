@@ -84,9 +84,6 @@ class OnTracTest < Test::Unit::TestCase
     assert resp.success?
     assert resp.test
     assert_equal resp.message, "Successfully created shipment"
-    assert_equal resp.params['ServiceChrg'], "24.1"
-    assert_equal resp.params['FuelChrg'], "3.07"
-    assert_equal resp.params['TotalChrg'], "27.17"
     assert_equal resp.params['SortCode'], "LAX"
     assert resp.params['Tracking'].present?
     assert resp.params['Error'].nil?
@@ -98,9 +95,6 @@ class OnTracTest < Test::Unit::TestCase
     assert resp.success?
     assert resp.test
     assert_equal resp.message, "Successfully created shipment"
-    assert_equal resp.params['ServiceChrg'], "24.1"
-    assert_equal resp.params['FuelChrg'], "3.07"
-    assert_equal resp.params['TotalChrg'], "27.17"
     assert_equal resp.params['SortCode'], "LAX"
     assert resp.params['Tracking'].present?
     assert resp.params['Error'].nil?
