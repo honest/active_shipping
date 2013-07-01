@@ -15,32 +15,32 @@ module ActiveMerchant
 
       def find_rates(origin, destination, packages, options = {})
         url = build_url("/V1/#{@options[:account]}/rates", {
-          pw: @options[:password],
-          packages: build_packages(origin, destination, packages, options)
+          :pw => @options[:password],
+          :packages => build_packages(origin, destination, packages, options)
         })
         response = Hash.from_xml(save_request(ssl_get(url)))['OnTracRateResponse']
         error = response['Error'] || response['Shipments']['Shipment']['Error']
         if error.present?
-          Response.new(false, error, {}, {test: test_mode?})
+          Response.new(false, error, {}, {:test => test_mode?})
         else
           details = response['Shipments']['Shipment']['Rates']['Rate']
-          Response.new(true, 'Successfully Retrieved rate', details, {test: test_mode?})
+          Response.new(true, 'Successfully Retrieved rate', details, {:test => test_mode?})
         end
       end
 
       def create_shipment(origin, destination, package, options = {})
         url = build_url("/V1/#{@options[:account]}/shipments", {
-          pw: @options[:password]
+          :pw => @options[:password]
         })
         shipment = build_shipment(origin, destination, package, options)
         result = save_request(ssl_post(url, shipment))
         response = Hash.from_xml(result)['OnTracShipmentResponse']
         error = response['Error'] || response['Shipments']['Shipment']['Error']
         if error.present?
-          Response.new(false, error, {}, {test: test_mode?})
+          Response.new(false, error, {}, {:test => test_mode?})
         else
           details = response['Shipments']['Shipment']
-          Response.new(true, 'Successfully created shipment', details, {test: test_mode?})
+          Response.new(true, 'Successfully created shipment', details, {:test => test_mode?})
         end
       end
 
@@ -48,12 +48,12 @@ module ActiveMerchant
       # optional params
       # logoFormat {BMP,GIF,PNG, and JPG}
       # sigFormat {BMP,GIF,PNG, and JPG}
-      def find_tracking_info(tracking_numbers, options={})
+      def find_tracking_info(tracking_numbers, options = {})
         type = options.delete(:type) || :track
         url = build_url("/V1/#{@options[:account]}/shipments", {
-          pw: @options[:password],
-          requestType: type,
-          tn: tracking_numbers.join(',')
+          :pw => @options[:password],
+          :requestType => type,
+          :tn => tracking_numbers.join(',')
         }.merge(options))
         result = Hash.from_xml(save_request(ssl_get(url)))
         response = case type.to_sym
@@ -64,7 +64,7 @@ module ActiveMerchant
         end
         error = response['Error'] || response['Shipments']['Shipment']['Error']
         if error
-          Response.new(false, error, {}, {test: test_mode?})
+          Response.new(false, error, {}, {:test => test_mode?})
         else
           details = response['Shipments']['Shipment']
           message = case type.to_sym
@@ -76,7 +76,7 @@ module ActiveMerchant
             end
             'Successfully retrieved tracking info'
           end
-          Response.new(true, message, details, {test: test_mode?})
+          Response.new(true, message, details, {:test => test_mode?})
         end
       end
 
@@ -86,13 +86,13 @@ module ActiveMerchant
         url = build_url("/V1/#{@options[:account]}/Zips", params)
         response = Hash.from_xml(save_request(ssl_get(url)))['OnTracZipResponse']
         if response['Error'].present?
-          Response.new(false, response['Error'], {}, {test: test_mode?})
+          Response.new(false, response['Error'], {}, {:test => test_mode?})
         else
           zips = response['Zips']['Zip'].inject({}) do |hsh, zip_info|
             zip = zip_info.delete('zipCode')
             hsh.merge(zip => zip_info)
           end
-          Response.new(true, 'Successfully Retrieved zips', zips, {test: test_mode?})
+          Response.new(true, 'Successfully Retrieved zips', zips, {:test => test_mode?})
         end
       end
 
@@ -110,7 +110,6 @@ module ActiveMerchant
       end
 
       def build_packages(origin, destination, packages, options = {})
-
         packages.map do |package|
           dimensions = [:length, :width, :height].map{|axis| package.inches(axis) }.join('x')
           data = [
@@ -173,8 +172,8 @@ module ActiveMerchant
               xml.Residential(options[:residential] || false)
               xml.SaturdayDel(options[:saturday_delivery] || false)
               xml.Declared(package.value || 0)
-              xml.COD(options[:cod])
-              xml.CODType(options[:cod_type] || 'None')
+              xml.COD(options[:cod]|| 0.0)
+              xml.CODType(options[:cod_type] || 'NONE')
               xml.Weight(package.lbs)
               xml.BillTo(options[:bill_to] || 0)
               xml.Instructions(options[:instructions] || '')
