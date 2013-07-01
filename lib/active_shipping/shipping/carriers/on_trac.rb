@@ -2,6 +2,8 @@ module ActiveMerchant
   module Shipping
     class OnTrac < Carrier
       cattr_reader :name
+      cattr_reader :label_type
+
       @@name = "On Trac"
 
       TEST_URL = 'https://www.shipontrac.net/OnTracTestWebServices/OnTracServices.svc'
@@ -126,6 +128,17 @@ module ActiveMerchant
         end.join(',')
       end
 
+      def build_label_type(options={})
+        # 0 – No label, 1 – pdf, 2 – jpg, 3 – bmp, 4 – gif, 5 – 4 x 3 EPL, 6 – 4 x 5 EPL label, 7 – 4 x 5 ZPL
+        if options[:label_type].present?
+          return 1 if [1, 'PDF', 'pdf'].include?(options[:label_type])
+        end
+        if options[:label_type].present?
+          return 7 if [7, 'ZPL', 'zpl'].include?(options[:label_type])
+        end
+        return 0
+      end
+
       def build_shipment(origin, destination, package, options = {})
         xml = Builder::XmlMarkup.new
         xml.OnTracShipmentRequest do
@@ -163,10 +176,6 @@ module ActiveMerchant
               xml.CODType('NONE')
               xml.Weight(package.lbs)
               xml.BillTo(0)
-              xml.Instructions('Ring Bell')
-              xml.Reference('Awe343')
-              xml.Reference2
-              xml.Reference3
               xml.Tracking
               xml.ShipEmail
               xml.DelEmail
@@ -175,8 +184,12 @@ module ActiveMerchant
                 xml.Width(package.inches(:width))
                 xml.Height(package.inches(:height))
               end
-              xml.LabelType(0)
+              xml.LabelType(build_label_type(@options.merge(options)))
               xml.ShipDate(Time.now.strftime('%Y-%m-%d'))
+              xml.Instructions(options[:instructions])
+              xml.Reference(options[:reference])
+              xml.Reference2(options[:reference2])
+              xml.Reference3(options[:reference3])
             end
           end
         end
