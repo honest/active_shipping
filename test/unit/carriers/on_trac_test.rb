@@ -82,6 +82,8 @@ class OnTracTest < Test::Unit::TestCase
   end
 
   def test_create_shipment_with_Zebra_label
+    mock_response = xml_fixture('on_trac/zebra')
+    @carrier.expects(:ssl_post).returns(mock_response)
     resp = @carrier.create_shipment(@beverly_hills, @old_honest, @chocolate, label_type: 'ZPL')
     assert resp.success?
     assert resp.test
@@ -93,6 +95,8 @@ class OnTracTest < Test::Unit::TestCase
   end
 
   def test_create_shipment_with_PDF_label
+    mock_response = xml_fixture('on_trac/pdf')
+    @carrier.expects(:ssl_post).returns(mock_response)
     resp = @carrier.create_shipment(@beverly_hills, @old_honest, @chocolate, label_type: 'PDF')
     assert resp.success?
     assert resp.test
