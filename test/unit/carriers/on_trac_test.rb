@@ -81,6 +81,28 @@ class OnTracTest < Test::Unit::TestCase
     assert resp.params['Error'].nil?
   end
 
+  def test_create_shipment_with_Zebra_label
+    resp = @carrier.create_shipment(@beverly_hills, @old_honest, @chocolate, label_type: 'ZPL')
+    assert resp.success?
+    assert resp.test
+    assert_equal resp.message, "Successfully created shipment"
+    assert_equal resp.params['SortCode'], "LAX"
+    assert resp.params['Tracking'].present?
+    assert resp.params['Error'].nil?
+    assert resp.params['Label']
+  end
+
+  def test_create_shipment_with_PDF_label
+    resp = @carrier.create_shipment(@beverly_hills, @old_honest, @chocolate, label_type: 'PDF')
+    assert resp.success?
+    assert resp.test
+    assert_equal resp.message, "Successfully created shipment"
+    assert_equal resp.params['SortCode'], "LAX"
+    assert resp.params['Tracking'].present?
+    assert resp.params['Error'].nil?
+    assert resp.params['Label']
+  end
+
   def test_create_shipment_error
     mock_response = xml_fixture('on_trac/shipment_error')
     @dishonest = Location.new(@old_honest.to_hash.merge(:postal_code => 'ABCDE'))

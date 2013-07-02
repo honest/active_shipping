@@ -2,6 +2,8 @@ module ActiveMerchant
   module Shipping
     class OnTrac < Carrier
       cattr_reader :name
+      cattr_reader :label_type
+      
       @@name = "On Trac"
 
       TEST_URL = 'https://www.shipontrac.net/OnTracTestWebServices/OnTracServices.svc'
@@ -180,6 +182,17 @@ module ActiveMerchant
         end.join(',')
       end
 
+      def build_label_type(options={})
+        # 0 – No label, 1 – pdf, 2 – jpg, 3 – bmp, 4 – gif, 5 – 4 x 3 EPL, 6 – 4 x 5 EPL label, 7 – 4 x 5 ZPL
+        if options[:label_type].present?
+          return 1 if [1, 'PDF', 'pdf'].include?(options[:label_type])
+        end
+        if options[:label_type].present?
+          return 7 if [7, 'ZPL', 'zpl'].include?(options[:label_type])
+        end
+        return 0
+      end
+
       def build_shipment(origin, destination, package, options = {})
         xml = Builder::XmlMarkup.new
         xml.OnTracShipmentRequest do
@@ -229,7 +242,7 @@ module ActiveMerchant
                 xml.Width(package.inches(:width))
                 xml.Height(package.inches(:height))
               end
-              xml.LabelType(options[:label_type] || 0)
+              xml.LabelType(build_label_type(@options.merge(options)))
               xml.ShipDate(options[:ship_date] || Time.now.strftime('%Y-%m-%d'))
             end
           end
