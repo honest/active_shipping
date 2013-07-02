@@ -7,6 +7,13 @@ module ActiveMerchant
       TEST_URL = 'https://www.shipontrac.net/OnTracTestWebServices/OnTracServices.svc'
       LIVE_URL = 'https://www.shipontrac.net/OnTracWebServices/OnTracServices.svc'
 
+      SERVICES = {
+        'S' => 'Sunrise',
+        'G' => 'Gold',
+        'H' => 'Palletized Freight',
+        'C' => 'OnTrac Ground'
+      }
+
       def requirements
         [:account, :password]
       end
@@ -19,10 +26,19 @@ module ActiveMerchant
         response = Hash.from_xml(save_request(ssl_get(url)))['OnTracRateResponse']
         error = response['Error'] || response['Shipments']['Shipment']['Error']
         if error.present?
-          Response.new(false, error, {}, {:test => test_mode?})
+          RateResponse.new(false, error, {}, {:test => test_mode?})
         else
           details = response['Shipments']['Shipment']['Rates']['Rate']
-          Response.new(true, 'Successfully Retrieved rate', details, {:test => test_mode?})
+          service_name  = SERVICES[details['Service']]
+          options = {
+            :service_charge => details['ServiceChrg'],
+            :fuel_charge => details['FuelCharge'],
+            :total_charge => details['TotalCharge'],
+            :transit_days => details['TransitDays'],
+            :global_rate => details['GlobalRate']
+          }
+          rate = RateEstimate.new(origin, destination, @@name, service_name, options)
+          RateResponse.new(true, 'Successfully Retrieved rate', details, {:rates => [rate], :test => test_mode?})
         end
       end
 
@@ -35,10 +51,14 @@ module ActiveMerchant
         response = Hash.from_xml(result)['OnTracShipmentResponse']
         error = response['Error'] || response['Shipments']['Shipment']['Error']
         if error.present?
-          Response.new(false, error, {}, {:test => test_mode?})
+          ShippingResponse.new(false, error, {}, {:test => test_mode?})
         else
           details = response['Shipments']['Shipment']
-          Response.new(true, 'Successfully created shipment', details, {:test => test_mode?})
+          ShippingResponse.new(true, 'Successfully created shipment', details, {
+            :test => test_mode?,
+            :tracking_number => details['Tracking'],
+            :shipping_id => details['UID']
+          })
         end
       end
 
@@ -60,21 +80,55 @@ module ActiveMerchant
         when :track
           result['OnTracTrackingResult']
         end
+        default_options = {
+          :carrier                 => @@name,
+          :test                    => test_mode? 
+        }
         error = response['Error'] || response['Shipments']['Shipment']['Error']
         if error
-          Response.new(false, error, {}, {:test => test_mode?})
+          TrackingResponse.new(false, error, {}, default_options)
         else
           details = response['Shipments']['Shipment']
-          message = case type.to_sym
+          case type.to_sym
           when :details then
-            'Successfully retrieved shipment details'
+            msg = 'Successfully retrieved shipment details'
+            options = default_options.merge({
+              :tracking_number => details['Tracking']
+            })
+            TrackingResponse.new(true, msg, details, options)
           when :track then
+            default_options.merge!(:service_name => SERVICES[details['Service'].strip])
+            msg = 'Successfully retrieved tracking info'
             if result['OnTracTrackingResult']['Logo'].present?
               details.merge(logo: result['OnTracTrackingResult']['Logo'])
+            else
+              event = details['Events']['Event']
+              location = Location.new({
+                name: event['Facility'].strip,
+                city: event['City'],
+                state: event['State'],
+                postal_code: event['Zip']
+              })
+              time = Time.parse(event['EventTime'])
+              zoneless_time = Time.utc(time.year, time.month, time.mday, time.hour, time.min, time.sec)
+              ship_event = ShipmentEvent.new(event['Description'], zoneless_time, location)
+              destination = Location.new({
+                name: details['Name'],
+                address1: details['Addr1'],
+                city: details['City'],
+                state: details['State'],
+                postal_code: details['Zip']
+              })
+              options = default_options.merge({
+                :shipment_events         => [ship_event],
+                :tracking_number         => details['Tracking'],
+                :origin                  => Location.new({}),
+                :destination             => destination,
+                :delivery_signature      => details['Signature'],
+              })
+              TrackingResponse.new(true, msg, details, options)
             end
-            'Successfully retrieved tracking info'
           end
-          Response.new(true, message, details, {:test => test_mode?})
         end
       end
 

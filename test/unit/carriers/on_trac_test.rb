@@ -31,6 +31,7 @@ class OnTracTest < Test::Unit::TestCase
     resp = @carrier.find_rates(@beverly_hills, @old_honest, [@chocolate])
     assert resp.success?
     assert resp.test
+    assert resp.is_a?(RateResponse)
     assert_equal resp.message, "Successfully Retrieved rate"
     assert_equal resp.params['ServiceChrg'], "6.55"
     assert_equal resp.params['FuelCharge'], "0.49"
@@ -70,6 +71,7 @@ class OnTracTest < Test::Unit::TestCase
     resp = @carrier.create_shipment(@beverly_hills, @old_honest, @chocolate)
     assert resp.success?
     assert resp.test
+    assert resp.is_a?(ShippingResponse)
     assert_equal resp.message, "Successfully created shipment"
     assert_equal resp.params['ServiceChrg'], "6.55"
     assert_equal resp.params['FuelChrg'], "0.49"
