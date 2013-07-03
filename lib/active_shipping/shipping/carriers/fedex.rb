@@ -157,7 +157,7 @@ module ActiveMerchant
       def create_shipment(origin, destination, package, options = {})
         options = @options.update(options)
 
-        shipment_request = build_shipment_request(origin, destination, package, options).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
+        shipment_request = build_shipment_request(origin, destination, package, options)
 
         response = commit(save_request(shipment_request), (options[:test] || false))
 

@@ -79,7 +79,6 @@ module ActiveMerchant
           :requestType => type,
           :tn => tracking_numbers.class == String ? tracking_numbers : tracking_numbers.join(',')
         }.merge(options))
-        debugger
         result = Hash.from_xml(save_request(ssl_get(url)))
         response = case type.to_sym
         when :details then
