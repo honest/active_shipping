@@ -572,6 +572,7 @@ module ActiveMerchant
           ShippingResponse.new(success, message, {}, {
             :carrier => @@name,
             :test => test_mode?,
+            :test => options[:test],
             :xml => response,
             :request => last_request,
             :shipping_id => shipping_id,

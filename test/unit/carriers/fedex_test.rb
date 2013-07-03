@@ -263,7 +263,6 @@ class FedExTest < Test::Unit::TestCase
     end
   end
 
-end
   def test_create_shipment
     mock_response = xml_fixture('fedex/create_shipment')
 
