@@ -569,7 +569,7 @@ module ActiveMerchant
 
           # Hash.from_xml(response).values.first
 
-          ShippingResponse.new(success, message, {}, {
+          ShippingResponse.new(success, message, Hash.from_xml(response), {
             :carrier => @@name,
             :test => test_mode?,
             :test => options[:test],
@@ -584,7 +584,7 @@ module ActiveMerchant
             :package => package
           })
         else
-          ShippingResponse.new(success, message, {}, {
+          ShippingResponse.new(success, message, Hash.from_xml(response), {
             :xml => response,
             :request => last_request,
             :test => test_mode?
