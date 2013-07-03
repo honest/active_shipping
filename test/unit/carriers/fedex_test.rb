@@ -264,3 +264,17 @@ class FedExTest < Test::Unit::TestCase
   end
 
 end
+  def test_create_shipment
+    mock_response = xml_fixture('fedex/create_shipment')
+
+    @carrier.expects(:commit).returns(mock_response)
+
+    resp = @carrier.create_shipment(@locations[:new_york_with_name], @locations[:beverly_hills],  @packages[:american_wii], {:test => true})
+    assert resp.success?
+    assert resp.test
+    assert resp.tracking_number.present?
+    assert resp.shipping_id.present?
+    assert resp.xml.present?
+    assert resp.message.match(/success/i)
+  end
+end
