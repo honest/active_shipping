@@ -282,7 +282,7 @@ module ActiveMerchant
               end
             end
 
-            if options[:service_type] == 'SMART_POST' && option_node[:smart_post].present?
+            if options[:service_type] == 'SMART_POST' && options[:smart_post].present?
               request_node << XmlNode.new('SmartPostDetail') do |smart_post|
                 smart_post << XmlNode.new('Indicia', options[:smart_post][:indicia] || 'PARCEL_SELECT')
                 if options[:smart_post][:ancillary_endorsement]
