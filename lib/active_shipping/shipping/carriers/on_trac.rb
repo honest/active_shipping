@@ -1,9 +1,10 @@
+# -*- coding: utf-8 -*-
 module ActiveMerchant
   module Shipping
     class OnTrac < Carrier
       cattr_reader :name
       cattr_reader :label_type
-      
+
       @@name = "On Trac"
 
       TEST_URL = 'https://www.shipontrac.net/OnTracTestWebServices/OnTracServices.svc'
@@ -41,7 +42,7 @@ module ActiveMerchant
           }
           rate = RateEstimate.new(origin, destination, @@name, service_name, options)
           RateResponse.new(true, 'Successfully Retrieved rate', details, {
-            :rates => [rate], 
+            :rates => [rate],
             :test => test_mode?
           })
         end
@@ -76,8 +77,9 @@ module ActiveMerchant
         url = build_url("/V1/#{@options[:account]}/shipments", {
           :pw => @options[:password],
           :requestType => type,
-          :tn => tracking_numbers.join(',')
+          :tn => tracking_numbers.class == String ? tracking_numbers : tracking_numbers.join(',')
         }.merge(options))
+        debugger
         result = Hash.from_xml(save_request(ssl_get(url)))
         response = case type.to_sym
         when :details then
@@ -87,7 +89,7 @@ module ActiveMerchant
         end
         default_options = {
           :carrier                 => @@name,
-          :test                    => test_mode? 
+          :test                    => test_mode?
         }
         error = response['Error'] || response['Shipments']['Shipment']['Error']
         if error
