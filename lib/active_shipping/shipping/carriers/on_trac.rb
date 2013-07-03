@@ -40,7 +40,10 @@ module ActiveMerchant
             :global_rate => details['GlobalRate']
           }
           rate = RateEstimate.new(origin, destination, @@name, service_name, options)
-          RateResponse.new(true, 'Successfully Retrieved rate', details, {:rates => [rate], :test => test_mode?})
+          RateResponse.new(true, 'Successfully Retrieved rate', details, {
+            :rates => [rate], 
+            :test => test_mode?
+          })
         end
       end
 
