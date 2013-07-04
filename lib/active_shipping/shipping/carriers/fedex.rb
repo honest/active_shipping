@@ -159,7 +159,7 @@ module ActiveMerchant
 
         shipment_request = build_shipment_request(origin, destination, package, options)
 
-        response = commit(save_request(shipment_request), (options[:test] || false)).gsub(/<\?.*\?>/, "").strip.gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
+        response = commit(save_request(shipment_request), (options[:test] || false)).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
 
         parse_shipping_response(response, options.merge(package: package))
       end
