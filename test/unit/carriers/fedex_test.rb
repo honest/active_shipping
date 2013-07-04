@@ -271,6 +271,7 @@ class FedExTest < Test::Unit::TestCase
     resp = @carrier.create_shipment(@locations[:new_york_with_name], @locations[:beverly_hills],  @packages[:american_wii], {:test => true})
     assert resp.success?
     assert resp.test
+    assert resp.label.present?
     assert resp.tracking_number.present?
     assert resp.shipping_id.present?
     assert resp.xml.present?

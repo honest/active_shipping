@@ -561,7 +561,6 @@ module ActiveMerchant
           shipped_package = options[:package]
 
           package = Package.new(shipped_package.ounces, [], {
-            :label_image => graphic_image,
             :tracking_number => tracking_number,
             :service_option_charges => service_option_charges,
             :service_option_charges_currency => service_option_charges_currency
@@ -575,6 +574,7 @@ module ActiveMerchant
             :test => options[:test],
             :xml => response,
             :request => last_request,
+            :label => graphic_image,
             :shipping_id => shipping_id,
             :tracking_number => tracking_number,
             :shipment_charges => shipment_charges,

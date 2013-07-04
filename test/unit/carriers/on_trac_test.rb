@@ -72,6 +72,7 @@ class OnTracTest < Test::Unit::TestCase
     assert resp.success?
     assert resp.test
     assert resp.is_a?(ShippingResponse)
+    assert resp.label.blank?
     assert_equal resp.message, "Successfully created shipment"
     assert_equal resp.params['ServiceChrg'], "6.55"
     assert_equal resp.params['FuelChrg'], "0.49"
@@ -87,6 +88,7 @@ class OnTracTest < Test::Unit::TestCase
     resp = @carrier.create_shipment(@beverly_hills, @old_honest, @chocolate, label_type: 'ZPL')
     assert resp.success?
     assert resp.test
+    assert resp.label.present?
     assert_equal resp.message, "Successfully created shipment"
     assert_equal resp.params['SortCode'], "LAX"
     assert resp.params['Tracking'].present?
@@ -100,6 +102,7 @@ class OnTracTest < Test::Unit::TestCase
     resp = @carrier.create_shipment(@beverly_hills, @old_honest, @chocolate, label_type: 'PDF')
     assert resp.success?
     assert resp.test
+    assert resp.label.present?
     assert_equal resp.message, "Successfully created shipment"
     assert_equal resp.params['SortCode'], "LAX"
     assert resp.params['Tracking'].present?
