@@ -63,7 +63,8 @@ module ActiveMerchant
           ShippingResponse.new(true, 'Successfully created shipment', details, {
             :test => test_mode?,
             :tracking_number => details['Tracking'],
-            :shipping_id => details['UID']
+            :shipping_id => details['UID'],
+            :label => details['Label']
           })
         end
       end
