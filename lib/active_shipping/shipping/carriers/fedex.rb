@@ -370,7 +370,7 @@ module ActiveMerchant
             address_node << XmlNode.new('PostalCode', location.postal_code)
             address_node << XmlNode.new('CountryCode', location.country_code(:alpha2))
             # If FedEX GROUND_HOME_DELIVERY service is used then the address needs to be marked residential
-            address_node << XmlNode.new('Residential', false) if location.commercial?
+            address_node << XmlNode.new('Residential', !location.commercial?)
           end
         end
       end
