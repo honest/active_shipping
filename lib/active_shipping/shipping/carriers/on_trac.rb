@@ -233,7 +233,7 @@ module ActiveMerchant
               xml.Declared(package.value || 0)
               xml.COD(options[:cod]|| 0.0)
               xml.CODType(options[:cod_type] || 'NONE')
-              xml.Weight(package.lbs)
+              xml.Weight('%0.2f' % package.lbs)
               xml.BillTo(options[:bill_to] || 0)
               xml.Instructions(options[:instructions] || '')
               xml.Reference(options[:reference])
