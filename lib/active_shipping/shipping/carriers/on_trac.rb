@@ -109,16 +109,9 @@ module ActiveMerchant
             if result['OnTracTrackingResult']['Logo'].present?
               details.merge(logo: result['OnTracTrackingResult']['Logo'])
             else
-              event = details['Events']['Event']
-              location = Location.new({
-                name: event['Facility'].strip,
-                city: event['City'],
-                state: event['State'],
-                postal_code: event['Zip']
-              })
-              time = Time.parse(event['EventTime'])
-              zoneless_time = Time.utc(time.year, time.month, time.mday, time.hour, time.min, time.sec)
-              ship_event = ShipmentEvent.new(event['Description'], zoneless_time, location)
+              events = details['Events']['Event']
+              #To handle that fact that with one event it parses as a hash.
+              events = [events] if events.is_a? Hash
               destination = Location.new({
                 name: details['Name'],
                 address1: details['Addr1'],
@@ -126,13 +119,26 @@ module ActiveMerchant
                 state: details['State'],
                 postal_code: details['Zip']
               })
+              shipment_events = events.inject([]) do |results, event|
+                location = Location.new({
+                  name: event['Facility'].strip,
+                  city: event['City'],
+                  state: event['State'],
+                  postal_code: event['Zip']
+                })
+                time = Time.parse(event['EventTime'])
+                zoneless_time = Time.utc(time.year, time.month, time.mday, time.hour, time.min, time.sec)
+                ship_event = ShipmentEvent.new(event['Description'], zoneless_time, location)
+                results << ship_event
+              end
+
               options = default_options.merge({
-                :shipment_events         => [ship_event],
-                :tracking_number         => details['Tracking'],
-                :origin                  => Location.new({}),
-                :destination             => destination,
-                :delivery_signature      => details['Signature'],
-              })
+                  :shipment_events         => shipment_events,
+                  :tracking_number         => details['Tracking'],
+                  :origin                  => Location.new({}),
+                  :destination             => destination,
+                  :delivery_signature      => details['Signature'],
+                })
               TrackingResponse.new(true, msg, details, options)
             end
           end
