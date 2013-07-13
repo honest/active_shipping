@@ -277,4 +277,18 @@ class FedExTest < Test::Unit::TestCase
     assert resp.xml.present?
     assert resp.message.match(/success/i)
   end
+
+  def test_validate_address
+    mock_response = xml_fixture('fedex/validation_response')
+
+    @carrier.expects(:commit).returns(mock_response)
+
+    resp = @carrier.validate_address(@locations[:beverly_hills])
+    assert resp.success?
+    # assert resp.test
+    assert_equal resp.changes[0], 'MODIFIED_TO_ACHIEVE_MATCH'
+    assert_equal resp.changes[1], 'APARTMENT_NUMBER_REQUIRED'
+    assert_equal resp.score, 98
+    assert resp.address.present?
+  end
 end

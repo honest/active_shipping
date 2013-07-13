@@ -2,6 +2,8 @@
 # http://github.com/jimmyebaker
 
 require 'date'
+require 'active_support/json'
+
 module ActiveMerchant
   module Shipping
     
@@ -162,6 +164,15 @@ module ActiveMerchant
         response = commit(save_request(shipment_request), (options[:test] || false)).gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
 
         parse_shipping_response(response, options.merge(package: package))
+      end
+
+      def validate_address(location, options = {})
+        options = @options.update(options)
+
+        validation_request = build_validation_request(location, options)
+        response = commit(save_request(validation_request), options[:test] || false).gsub(/<\?.*\?>/, "").strip.gsub(/<(\/)?.*?\:(.*?)>/, '<\1\2>')
+
+        parse_validation_response(response, options)
       end
 
       protected
@@ -340,12 +351,14 @@ module ActiveMerchant
         client_detail = XmlNode.new('ClientDetail') do |cd|
           cd << XmlNode.new('AccountNumber', @options[:account])
           cd << XmlNode.new('MeterNumber', @options[:login])
+          localization_detail = XmlNode.new('Localization') do |ld|
+            ld << XmlNode.new('LanguageCode', 'en')
+            ld << XmlNode.new('LocaleCode', 'us')
+          end
+          cd << localization_detail
         end
 
-        localization_detail = XmlNode.new('Localization') do |ld|
-          ld << XmlNode.new('LanguageCode', 'en')
-          ld << XmlNode.new('LocaleCode', 'us')
-        end
+
         
         trasaction_detail = XmlNode.new('TransactionDetail') do |td|
           td << XmlNode.new('CustomerTransactionId', 'ActiveShipping') # TODO: Need to do something better with this..
@@ -384,6 +397,32 @@ module ActiveMerchant
             address_node << XmlNode.new("Residential", true) unless location.commercial?
           end
         end
+      end
+
+      def build_validation_request(location, options)
+        xml_request = XmlNode.new('AddressValidationRequest', xmlns: 'http://fedex.com/ws/addressvalidation/v2') do |root_node|
+          root_node << build_request_header
+          root_node << XmlNode.new('Version') do |version|
+            version << XmlNode.new('ServiceId', 'aval')
+            version << XmlNode.new('Major', 2)
+            version << XmlNode.new('Intermediate', 0)
+            version << XmlNode.new('Minor', 0)
+          end
+          root_node << XmlNode.new('RequestTimestamp', Time.now.as_json)
+          root_node << XmlNode.new('Options') do |opt|
+            opt << XmlNode.new('CheckResidentialStatus', true)
+          end
+          root_node << XmlNode.new('AddressesToValidate') do |addr_validate|
+            addr_validate << XmlNode.new('Address') do |addr|
+              addr << XmlNode.new('StreetLines', location.address1)        
+              addr << XmlNode.new('City', location.city)
+              addr << XmlNode.new('StateOrProvinceCode', location.state)
+              addr << XmlNode.new('PostalCode', location.postal_code)
+              addr << XmlNode.new('CountryCode', location.country)        
+            end
+          end
+        end
+        xml_request.to_s
       end
       
       def parse_rate_response(origin, destination, packages, response, options)
@@ -585,6 +624,40 @@ module ActiveMerchant
           })
         else
           ShippingResponse.new(success, message, Hash.from_xml(response), {
+            :xml => response,
+            :request => last_request,
+            :test => test_mode?
+          })
+        end
+      end
+
+      def parse_validation_response(response, options)
+        xml = REXML::Document.new(response)
+        success = response_success?(xml)
+        message = response_message(xml)
+        root_node = xml.elements['AddressValidationReply']
+        if success
+          result = root_node.elements['AddressResults/ProposedAddressDetails']
+          address = {
+            street: result.get_text('Address/StreetLines'),
+            city: result.get_text('Address/City'),
+            state: result.get_text('Address/StateOrProvinceCode'),
+            postal_code: result.get_text('Address/PostalCode'),
+            country: result.get_text('Address/CountryCode'),
+            residential: (result.get_text('ResidentialStatus') != 'BUSINESS')
+          }
+          score = result.get_text('Score').to_s.to_i
+          changes = result.each_element('Changes'){}.map(&:text)
+          ValidationResponse.new(success, message, Hash.from_xml(response), {
+            :xml => response,
+            :request => last_request,
+            :test => test_mode?,
+            :address => address,
+            :score => score,
+            :changes => changes
+          })
+        else
+          ValidationResponse.new(success, message, Hash.from_xml(response), {
             :xml => response,
             :request => last_request,
             :test => test_mode?
