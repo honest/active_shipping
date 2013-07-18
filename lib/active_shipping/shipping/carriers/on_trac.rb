@@ -26,24 +26,28 @@ module ActiveMerchant
           :pw => @options[:password],
           :packages => build_packages(origin, destination, packages, options)
         })
-        response = Hash.from_xml(save_request(ssl_get(url)))['OnTracRateResponse']
-        error = response['Error'] || response['Shipments']['Shipment']['Error']
+        response = ssl_get(url)
+        
+        result = Hash.from_xml(response)['OnTracRateResponse']
+
+        error = result['Error'] || result['Shipments']['Shipment']['Error']
         if error.present?
-          RateResponse.new(false, error, {}, {:test => test_mode?})
+          parse_error(RateResponse, error, result)
         else
-          details = response['Shipments']['Shipment']['Rates']['Rate']
+          details = result['Shipments']['Shipment']['Rates']['Rate']
           service_name  = SERVICES[details['Service']]
           options = {
-            :service_charge => details['ServiceChrg'],
-            :fuel_charge => details['FuelCharge'],
-            :total_charge => details['TotalCharge'],
-            :transit_days => details['TransitDays'],
-            :global_rate => details['GlobalRate']
+            service_charge: details['ServiceChrg'],
+            fuel_charge: details['FuelCharge'],
+            total_charge: details['TotalCharge'],
+            transit_days: details['TransitDays'],
+            global_rate: details['GlobalRate']
           }
           rate = RateEstimate.new(origin, destination, @@name, service_name, options)
           RateResponse.new(true, 'Successfully Retrieved rate', details, {
-            :rates => [rate],
-            :test => test_mode?
+            rates: [rate],
+            test: test_mode?
+            carrier_name: @@name
           })
         end
       end
@@ -53,18 +57,21 @@ module ActiveMerchant
           :pw => @options[:password]
         })
         shipment = build_shipment(origin, destination, package, options)
-        result = save_request(ssl_post(url, shipment))
-        response = Hash.from_xml(result)['OnTracShipmentResponse']
-        error = response['Error'] || response['Shipments']['Shipment']['Error']
+
+        response = ssl_post(url, shipment)
+
+        result = Hash.from_xml(response)['OnTracShipmentResponse']
+        error = result['Error'] || result['Shipments']['Shipment']['Error']
         if error.present?
-          ShippingResponse.new(false, error, {}, {:test => test_mode?})
+          parse_error(ShippingResponse, error, result)
         else
-          details = response['Shipments']['Shipment']
-          ShippingResponse.new(true, 'Successfully created shipment', details, {
-            :test => test_mode?,
-            :tracking_number => details['Tracking'],
-            :shipping_id => details['UID'],
-            :label => details['Label']
+          details = result['Shipments']['Shipment']
+          ShippingResponse.new(true, 'Successfully created shipment', result, {
+            test: test_mode?,
+            carrier_name: @@name,
+            tracking_number: details['Tracking'],
+            shipping_id: details['UID'],
+            label: details['Label']
           })
         end
       end
@@ -80,68 +87,16 @@ module ActiveMerchant
           :requestType => type,
           :tn => tracking_numbers.class == String ? tracking_numbers : tracking_numbers.join(',')
         }.merge(options))
-        result = Hash.from_xml(save_request(ssl_get(url)))
-        response = case type.to_sym
-        when :details then
-          result['OnTracUpdateResponse']
-        when :track
-          result['OnTracTrackingResult']
-        end
-        default_options = {
-          :carrier                 => @@name,
-          :test                    => test_mode?
-        }
-        error = response['Error'] || response['Shipments']['Shipment']['Error']
-        if error
-          TrackingResponse.new(false, error, {}, default_options)
-        else
-          details = response['Shipments']['Shipment']
-          case type.to_sym
-          when :details then
-            msg = 'Successfully retrieved shipment details'
-            options = default_options.merge({
-              :tracking_number => details['Tracking']
-            })
-            TrackingResponse.new(true, msg, details, options)
-          when :track then
-            default_options.merge!(:service_name => SERVICES[details['Service'].strip])
-            msg = 'Successfully retrieved tracking info'
-            if result['OnTracTrackingResult']['Logo'].present?
-              details.merge(logo: result['OnTracTrackingResult']['Logo'])
-            else
-              events = details['Events']['Event']
-              #To handle that fact that with one event it parses as a hash.
-              events = [events] if events.is_a? Hash
-              destination = Location.new({
-                name: details['Name'],
-                address1: details['Addr1'],
-                city: details['City'],
-                state: details['State'],
-                postal_code: details['Zip']
-              })
-              shipment_events = events.inject([]) do |results, event|
-                location = Location.new({
-                  name: event['Facility'].strip,
-                  city: event['City'],
-                  state: event['State'],
-                  postal_code: event['Zip']
-                })
-                time = Time.parse(event['EventTime'])
-                zoneless_time = Time.utc(time.year, time.month, time.mday, time.hour, time.min, time.sec)
-                ship_event = ShipmentEvent.new(event['Description'], zoneless_time, location)
-                results << ship_event
-              end
 
-              options = default_options.merge({
-                  :shipment_events         => shipment_events,
-                  :tracking_number         => details['Tracking'],
-                  :origin                  => Location.new({}),
-                  :destination             => destination,
-                  :delivery_signature      => details['Signature'],
-                })
-              TrackingResponse.new(true, msg, details, options)
-            end
-          end
+        response = ssl_get(url)
+
+        result = Hash.from_xml(response)
+        case type.to_sym
+        when :details then
+          parse_tracking_details(result)
+        when :track then
+          parse_tracking_info(result)
+        end
         end
       end
 
@@ -149,15 +104,22 @@ module ActiveMerchant
         params = {pw: @options[:password]}
         params.merge!(lastUpdate: last_update.strftime('%Y-%m-%d')) unless last_update.nil?
         url = build_url("/V1/#{@options[:account]}/Zips", params)
-        response = Hash.from_xml(save_request(ssl_get(url)))['OnTracZipResponse']
-        if response['Error'].present?
-          Response.new(false, response['Error'], {}, {:test => test_mode?})
+
+        response = ssl_get(url)
+
+        result = Hash.from_xml(response)['OnTracZipResponse']
+        if result['Error'].present?
+          parse_error(Response, result['Error'], result)
         else
           zips = response['Zips']['Zip'].inject({}) do |hsh, zip_info|
             zip = zip_info.delete('zipCode')
             hsh.merge(zip => zip_info)
           end
-          Response.new(true, 'Successfully Retrieved zips', zips, {:test => test_mode?})
+          Response.new(true, 'Successfully Retrieved zips', zips, {
+            test: test_mode?,
+            status: :error,
+            carrier_name: @@name
+          })
         end
       end
 
@@ -258,6 +220,72 @@ module ActiveMerchant
             end
           end
         end
+      end
+
+      def parse_tracking_details(result)
+        root = result['OnTracUpdateResponse']
+        error = root['Error'] || root['Shipments']['Shipment']['Error']
+        if error.present?
+          parse_error(TrackingResponse, error, result)
+        else
+          details = root['Shipments']['Shipment']
+          TrackingResponse.new(true, 'Successfully retrieved shipment details', result, {
+            status: :success,
+            tracking_number: details['Tracking']
+            carrier: @@name,
+            test: test_mode?
+          })
+        end
+      end
+
+      def parse_tracking_info(result)
+        root = result['OnTracTrackingResult']
+        error = root['Error'] || root['Shipments']['Shipment']['Error']
+        if error.present?
+          parse_error(TrackingResponse, error, result)
+        else
+          details = root['Shipments']['Shipment']
+          #To handle that fact that with one event it parses as a hash.
+          events = [details['Events']['Event']].flatten
+          destination = Location.new({
+            name: details['Name'],
+            address1: details['Addr1'],
+            city: details['City'],
+            state: details['State'],
+            postal_code: details['Zip']
+          })
+          shipment_events = events.map do |results, event|
+            location = Location.new({
+              name: event['Facility'].strip,
+              city: event['City'],
+              state: event['State'],
+              postal_code: event['Zip']
+            })
+            time = Time.parse(event['EventTime'])
+            ShipmentEvent.new(event['Description'], time.utc, location)
+          end
+
+          TrackingResponse.new(true, 'Successfully retrieved tracking info', result, {
+            carrier: @@name,
+            test: test_mode?,
+            shipment_events: shipment_events,
+            tracking_number: details['Tracking'],
+            origin: Location.new({}),
+            destination: destination,
+            delivery_signature: details['Signature'],
+            service_name: SERVICES[details['Service'].strip],
+            logo: result['OnTracTrackingResult'].try(:[],'Logo')
+          })
+        end
+      end
+
+      def parse_error(klass, msg, result)
+        klass.new(false, msg, result, {
+          test: test_mode?
+          status: :error,
+          carrier_name: @@name,
+          status_description: msg
+        })
       end
     end
   end
