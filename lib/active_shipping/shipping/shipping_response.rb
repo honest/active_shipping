@@ -1,6 +1,5 @@
 module ActiveMerchant #:nodoc:
   module Shipping
-    
     class ShippingResponse < Response
       attr_reader :shipping_id # string
       attr_reader :tracking_number # string
@@ -13,6 +12,5 @@ module ActiveMerchant #:nodoc:
         super
       end
     end
-    
   end
 end
