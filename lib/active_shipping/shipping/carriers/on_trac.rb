@@ -27,9 +27,9 @@ module ActiveMerchant
           :packages => build_packages(origin, destination, packages, options)
         })
         response = ssl_get(url)
-        
-        result = Hash.from_xml(response)['OnTracRateResponse']
 
+        result = Hash.from_xml(response)['OnTracRateResponse']
+        
         error = result['Error'] || result['Shipments']['Shipment']['Error']
         if error.present?
           parse_error(RateResponse, error, result)
@@ -37,17 +37,17 @@ module ActiveMerchant
           details = result['Shipments']['Shipment']['Rates']['Rate']
           service_name  = SERVICES[details['Service']]
           options = {
-            service_charge: details['ServiceChrg'],
-            fuel_charge: details['FuelCharge'],
-            total_charge: details['TotalCharge'],
-            transit_days: details['TransitDays'],
-            global_rate: details['GlobalRate']
+            :service_charge => details['ServiceChrg'],
+            :fuel_charge => details['FuelCharge'],
+            :total_charge => details['TotalCharge'],
+            :transit_days => details['TransitDays'],
+            :global_rate => details['GlobalRate']
           }
           rate = RateEstimate.new(origin, destination, @@name, service_name, options)
           RateResponse.new(true, 'Successfully Retrieved rate', details, {
-            rates: [rate],
-            test: test_mode?
-            carrier_name: @@name
+            :rates => [rate],
+            :test => test_mode?,
+            :carrier_name => @@name
           })
         end
       end
@@ -57,7 +57,6 @@ module ActiveMerchant
           :pw => @options[:password]
         })
         shipment = build_shipment(origin, destination, package, options)
-
         response = ssl_post(url, shipment)
 
         result = Hash.from_xml(response)['OnTracShipmentResponse']
@@ -66,12 +65,12 @@ module ActiveMerchant
           parse_error(ShippingResponse, error, result)
         else
           details = result['Shipments']['Shipment']
-          ShippingResponse.new(true, 'Successfully created shipment', result, {
-            test: test_mode?,
-            carrier_name: @@name,
-            tracking_number: details['Tracking'],
-            shipping_id: details['UID'],
-            label: details['Label']
+          ShippingResponse.new(true, 'Successfully created shipment', details, {
+            :test => test_mode?,
+            :carrier_name => @@name,
+            :tracking_number => details['Tracking'],
+            :shipping_id => details['UID'],
+            :label => details['Label']
           })
         end
       end
@@ -97,28 +96,27 @@ module ActiveMerchant
         when :track then
           parse_tracking_info(result)
         end
-        end
       end
 
       def zips(last_update = nil)
         params = {pw: @options[:password]}
         params.merge!(lastUpdate: last_update.strftime('%Y-%m-%d')) unless last_update.nil?
         url = build_url("/V1/#{@options[:account]}/Zips", params)
-
         response = ssl_get(url)
 
         result = Hash.from_xml(response)['OnTracZipResponse']
+
         if result['Error'].present?
           parse_error(Response, result['Error'], result)
         else
-          zips = response['Zips']['Zip'].inject({}) do |hsh, zip_info|
+          zips = result['Zips']['Zip'].inject({}) do |hsh, zip_info|
             zip = zip_info.delete('zipCode')
             hsh.merge(zip => zip_info)
           end
           Response.new(true, 'Successfully Retrieved zips', zips, {
-            test: test_mode?,
-            status: :error,
-            carrier_name: @@name
+            :test => test_mode?,
+            :carrier_name => @@name,
+            :status => :error
           })
         end
       end
@@ -231,7 +229,7 @@ module ActiveMerchant
           details = root['Shipments']['Shipment']
           TrackingResponse.new(true, 'Successfully retrieved shipment details', result, {
             status: :success,
-            tracking_number: details['Tracking']
+            tracking_number: details['Tracking'],
             carrier: @@name,
             test: test_mode?
           })
@@ -254,7 +252,7 @@ module ActiveMerchant
             state: details['State'],
             postal_code: details['Zip']
           })
-          shipment_events = events.map do |results, event|
+          shipment_events = events.map do |event|
             location = Location.new({
               name: event['Facility'].strip,
               city: event['City'],
@@ -281,9 +279,9 @@ module ActiveMerchant
 
       def parse_error(klass, msg, result)
         klass.new(false, msg, result, {
-          test: test_mode?
+          test: test_mode?,
           status: :error,
-          carrier_name: @@name,
+          carrier: @@name,
           status_description: msg
         })
       end
