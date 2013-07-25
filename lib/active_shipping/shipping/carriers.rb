@@ -8,13 +8,14 @@ require 'active_shipping/shipping/carriers/canada_post'
 require 'active_shipping/shipping/carriers/new_zealand_post'
 require 'active_shipping/shipping/carriers/canada_post_pws'
 require 'active_shipping/shipping/carriers/on_trac'
+require 'active_shipping/shipping/carriers/landmark'
 
 module ActiveMerchant
   module Shipping
     module Carriers
       class <<self
         def all
-          [BogusCarrier, UPS, USPS, FedEx, Shipwire, Kunaki, CanadaPost, NewZealandPost, CanadaPostPWS, OnTrac]
+          [BogusCarrier, UPS, USPS, FedEx, Shipwire, Kunaki, CanadaPost, NewZealandPost, CanadaPostPWS, OnTrac, Landmark]
         end
       end
     end

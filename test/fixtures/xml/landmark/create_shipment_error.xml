@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<ShipResponse><Errors><Error><ErrorCode>PostalCode</ErrorCode><ErrorMessage>Invalid address field: postal code</ErrorMessage></Error></Errors><Result><Success>false</Success><ResultMessage>See Errors element for error details</ResultMessage></Result></ShipResponse>

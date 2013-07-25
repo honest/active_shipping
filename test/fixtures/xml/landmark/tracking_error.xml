@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<TrackResponse><Errors><Error><ErrorCode>Lookup</ErrorCode><ErrorMessage>Duplicate results found. Shipment could not be tracked.</ErrorMessage></Error></Errors><Result><Success>false</Success><ResultMessage>See Errors element for error details</ResultMessage></Result></TrackResponse>
