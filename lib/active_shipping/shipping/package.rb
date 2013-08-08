@@ -12,7 +12,7 @@ module ActiveMerchant #:nodoc:
         @name = name
 
         imperial = (options[:units] == :imperial) ||
-          (grams_or_ounces.respond_to?(:unit) && m.unit.to_sym == :imperial)
+          (grams_or_ounces.respond_to?(:unit) && grams_or_ounces.unit.to_sym == :imperial)
         
         @unit_system = imperial ? :imperial : :metric
 
