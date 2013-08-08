@@ -1,0 +1,2 @@
+<?xml version="1.0"?>
+<CreateShipmentGroupResponse><Errors><Error><ErrorCode>Grouping</ErrorCode><ErrorMessage>No shipments to group</ErrorMessage></Error></Errors><Result><Success>false</Success><ResultMessage>See Errors element for error details</ResultMessage></Result></CreateShipmentGroupResponse>

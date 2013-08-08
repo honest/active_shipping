@@ -32,25 +32,15 @@ module ActiveMerchant
         parse_shipping_response(response, options.merge(package: package, items: package_items))
       end
 
-      # def create_shipment_group(shipments, options = {})
-      #   options = @options.update(options)
+      def create_shipment_group(shipments, options = {})
+        options = @options.update(options)
 
-      #   shipment_group_request = build_shipment_group_request(shipments)
+        shipment_group_request = build_shipment_group_request(shipments, options)
 
-      #   response = commit(save_request(shipment_request), (options[:test] || false))
+        response = commit(save_request(shipment_group_request), (options[:test] || false))
 
-      #   parse_shipment_group_response(response)
-      # end
-
-      # def create_linehaul(shipment_groups, options = {})
-      #   options = @options.update(options)
-
-      #   linehaul_request = build_linehaul_request(shipment_groups)
-
-      #   response = commit(save_request(linehaul_request), (options[:test] || false))
-
-      #   parse_linehaul_response(response)
-      # end
+        parse_shipment_group_response(response, options)
+      end
 
       protected
 
@@ -111,41 +101,30 @@ module ActiveMerchant
         end
       end
 
-      # def build_shipment_group_request(shipments, options)
-      #   xml = Builder::XmlMarkup.new
-      #   xml.CreateShipmentGroupRequest do
-      #     xml.Login do
-      #       xml.Username options[:username]
-      #       xml.Password options[:password]
-      #     end
-      #     if options[:region].present?
-      #       xml.Region options[:region]
-      #     end
-      #     xml.Test options[:test]
-      #     xml.AddToExistingGroup options[:existing_group] || false
-      #     if options[:group] == 'specific'
-      #       xml.Shipments do
-      #       end
-      #     else
-      #     end
-      #   end     
-      # end
-
-      # def build_linehaul_request(shipment_groups, options)
-      #   xml = Builder::XmlMarkup.new
-      #   xml.LinehaulRequest do
-      #     xml.Login do
-      #       xml.Username options[:username]
-      #       xml.Password options[:password]
-      #     end
-      #     xml.ShipmentGroups do
-      #     end
-      #     xml.GenerateLabel options[:label] || true
-      #     xml.LabelFormat options[:label_format] || 'PDF'
-      #     xml.Packages do
-      #     end
-      #   end
-      # end
+      def build_shipment_group_request(shipments, options)
+        xml = Builder::XmlMarkup.new
+        xml.CreateShipmentGroupRequest do
+          xml.Login do
+            xml.Username options[:username]
+            xml.Password options[:password]
+          end
+          if options[:region].present?
+            xml.Region options[:region]
+          end
+          xml.Test options[:test]
+          xml.AddToExistingGroup options[:existing_group].present? || false
+          if options[:existing_group] == 'specific'
+            xml.Shipments do
+              shipments.each do |shipment|
+                xml.Shipment do
+                  xml.PackageReference shipment
+                end
+              end
+            end
+          else
+          end
+        end     
+      end
 
       def parse_shipping_response(response, options)
         result = Hash.from_xml(response)['ShipResponse']
@@ -194,40 +173,22 @@ module ActiveMerchant
         end
       end
 
-      # def parse_shipment_group_response(response, options)
-      #   result = Hash.from_xml(response)['CreateShipmentGroupResponse']
-      #   if result['Errors']
-      #     parse_error(ShippingResponse, result)
-      #   else
-      #     details = result['Result']
-      #     ids = result['ShipmentGroups']['ShipmentGroup'].map{|group| group['ID'] }
-      #     ShippingResponse.new(true, details['ResultMessage'], {
-      #       test: test_mode?,
-      #       status: :error,
-      #       carrier_name: @@name,
-      #       shipping_ids: ids,
-      #       number_of_shipments: details['NumberOfShipments']
-      #     })
-      #   end  
-      # end
-
-      # def parse_linehaul_response(response, options)
-      #   result = Hash.from_xml(response)['CreateShipmentGroupResponse']
-      #   if result['Errors']
-      #     parse_error(ShippingResponse, result)
-      #   else
-      #     details = result['Result']
-      #     details['Packages']['Package'].map do |shipment|
-      #       ShippingResponse.new(true, shipment, {
-      #         test: test_mode?,
-      #         status: :error,
-      #         carrier_name: @@name,
-      #         tracking_number: shipment['TrackingNumber'],
-      #         shipping_id: shipment['LabelLink']
-      #       })
-      #     end
-      #   end  
-      # end
+      def parse_shipment_group_response(response, options)
+        result = Hash.from_xml(response)['CreateShipmentGroupResponse']
+        if result['Errors']
+          parse_error(ShippingResponse, result)
+        else
+          details = result['Result']
+          ids = result['ShipmentGroups']['ShipmentGroup'].map{|group| group['ID'] }
+          ShippingResponse.new(true, details['ResultMessage'], {
+            test: test_mode?,
+            status: :error,
+            carrier_name: @@name,
+            shipping_ids: ids,
+            number_of_shipments: details['NumberOfShipments']
+          })
+        end  
+      end
 
       def parse_error(klass, result)
         errors = [result['Errors']['Error']].flatten
