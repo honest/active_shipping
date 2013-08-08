@@ -49,20 +49,9 @@ class LandmarkTest < Test::Unit::TestCase
     end
   end
 
-  # Stubs
-  # def test_create_shipment_group
-    
-  # end
-
-  # def test_create_shipment_group_error
-  
-  # end
-
-  # def test_create_linehaul
-    
-  # end
-
-  # def test_create_linehaul_error
-    
-  # end
+  def test_create_shipment_group_all
+    @carrier.create_shipment(@beverly_hills, @ottawa, @chocolate, @items)
+    info = @carrier.create_shipment_group(['xxx1'], region: 'Canada East')
+    puts info.inspect
+  end
 end
