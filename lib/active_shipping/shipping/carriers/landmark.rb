@@ -243,11 +243,7 @@ module ActiveMerchant
       end
 
       def commit(request, test = false)
-        resp = ssl_post(URL, request)
-        file = File.new('test/fixtures/xml/landmark/tracking.xml', 'w+')
-        file.puts resp
-        file.close
-        resp
+        ssl_post(URL, request)
       end
     end
   end
