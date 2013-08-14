@@ -156,7 +156,9 @@ module ActiveMerchant
           events = [package['Events']['Event']].flatten
           shipment_events = events.map do |event|
             time = Time.parse(event['DateTime'].gsub(/(\d{2})\/(\d{2})/, '\2/\1'))
-            ShipmentEvent.new(event['Status'], time.utc, event['Location'])
+            shipment_event = ShipmentEvent.new(event['Status'], time.utc, event['Location'])
+            shipment_event.data = event
+            shipment_event
           end
           details = {
             xml: response,
