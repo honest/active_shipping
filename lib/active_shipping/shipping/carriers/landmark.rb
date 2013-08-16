@@ -59,12 +59,13 @@ module ActiveMerchant
             xml.Address2 destination.address2
             xml.City destination.city
             xml.State destination.state
-            xml.Country destination.country
+            xml.Country destination.country.code(:alpha2)
             xml.Phone destination.phone
             xml.PostalCode destination.postal_code
+            xml.Region destination.country
             xml.Residental destination.address_type == 'residential'
           end
-          xml.ShipMethod options[:shipping_methdo] || 'LGINTSTD'
+          xml.ShipMethod options[:shipping_method] || 'LGINTSTD'
           xml.LabelFormat options[:label_format] || 'PDF'
           xml.Packages do
             xml.Package do
