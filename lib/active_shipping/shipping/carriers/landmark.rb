@@ -83,7 +83,7 @@ module ActiveMerchant
                 xml.UnitPrice item.value
                 xml.Description item.name
                 xml.HSCode item.hs_code
-                xml.CountryOfOrigin origin.country_code
+                xml.CountryOfOrigin item.options[:country_of_origin] || origin.country_code
               end
             end
           end
