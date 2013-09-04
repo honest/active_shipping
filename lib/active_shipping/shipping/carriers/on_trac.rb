@@ -260,7 +260,7 @@ module ActiveMerchant
               postal_code: event['Zip']
             })
             time = Time.parse(event['EventTime'])
-            ShipmentEvent.new(event['Description'], time.utc, location)
+            ShipmentEvent.new(event['Description'], time, location)
           end
 
           TrackingResponse.new(true, 'Successfully retrieved tracking info', result, {

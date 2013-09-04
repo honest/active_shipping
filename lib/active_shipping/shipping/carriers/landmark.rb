@@ -80,7 +80,7 @@ module ActiveMerchant
               xml.Item do
                 xml.Sku item.sku
                 xml.Quantity item.quantity || 1
-                xml.UnitPrice item.value
+                xml.UnitPrice item.value.to_f / 100 # Landmark uses dollars, PackageItem uses cents
                 xml.Description item.name
                 xml.HSCode item.hs_code
                 xml.CountryOfOrigin item.options[:country_of_origin] || origin.country_code
@@ -157,7 +157,7 @@ module ActiveMerchant
           events = [package['Events']['Event']].flatten
           shipment_events = events.map do |event|
             time = Time.parse(event['DateTime'].gsub(/(\d{2})\/(\d{2})/, '\2/\1'))
-            shipment_event = ShipmentEvent.new(event['Status'], time.utc, event['Location'])
+            shipment_event = ShipmentEvent.new(event['Status'], time, event['Location'])
             shipment_event.data = event
             shipment_event
           end
