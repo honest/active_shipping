@@ -54,4 +54,35 @@ class LandmarkTest < Test::Unit::TestCase
     info = @carrier.create_shipment_group(['xxx1'], region: 'Canada East')
     puts info.inspect
   end
+
+  def test_build_tracking_request__default
+    default_options = @carrier.instance_variable_get(:@options)
+    xml = @carrier.send(:build_tracking_request, "tracking_number", default_options)
+    request_as_hash = Hash.from_xml(xml)
+    expected_hash = {
+      "Login"=>{
+        "Username"=>"demoapi", "Password"=>"demo123"
+      },
+      "TrackingNumber"=>"tracking_number",
+      "Test"=>"true",
+    }
+
+    assert_equal(request_as_hash["TrackRequest"], expected_hash)
+  end
+
+  def test_build_tracking_request__adds_retreival_type_if_option_passed
+    default_options = @carrier.instance_variable_get(:@options)
+    xml = @carrier.send(:build_tracking_request, "tracking_number", default_options.merge(include_historical_events: true))
+    request_as_hash = Hash.from_xml(xml)
+    expected_hash = {
+      "Login"=>{
+        "Username"=>"demoapi", "Password"=>"demo123"
+      },
+      "TrackingNumber"=>"tracking_number",
+      "RetrievalType"=>"Historical",
+      "Test"=>"true",
+    }
+
+    assert_equal(request_as_hash["TrackRequest"], expected_hash)
+  end
 end

@@ -99,6 +99,10 @@ module ActiveMerchant
           end
           xml.Test options[:test]
           xml.TrackingNumber tracking_number
+          if options[:include_historical_events]
+            xml.RetrievalType "Historical"
+          end
+
         end
       end
 
