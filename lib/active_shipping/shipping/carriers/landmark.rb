@@ -14,11 +14,11 @@ module ActiveMerchant
 
       def find_tracking_info(tracking_number, options = {})
         options = @options.update(options)
-        
+
         tracking_request = build_tracking_request(tracking_number, options)
 
         response = commit(save_request(tracking_request), (options[:test] || false))
-        
+
         parse_tracking_response(response, options)
       end
 
@@ -98,11 +98,11 @@ module ActiveMerchant
             xml.Password options[:password]
           end
           xml.Test options[:test]
-          xml.TrackingNumber tracking_number
-          if options[:include_historical_events]
-            xml.RetrievalType "Historical"
+          if options[:reference]
+            xml.Reference tracking_number
+          else
+            xml.TrackingNumber tracking_number
           end
-
         end
       end
 
@@ -128,7 +128,7 @@ module ActiveMerchant
             end
           else
           end
-        end     
+        end
       end
 
       def parse_shipping_response(response, options)
@@ -173,7 +173,7 @@ module ActiveMerchant
             shipment_events: shipment_events,
             tracking_number: package['TrackingNumber']
           }
-          if package['ExpectedDelivery'].present?            
+          if package['ExpectedDelivery'].present?
             details[:scheduled_delivery_date] = Date.parse(package['ExpectedDelivery'])
           end
           TrackingResponse.new(true, 'Successfully received package data', result, details)
@@ -194,7 +194,7 @@ module ActiveMerchant
             shipping_ids: ids,
             number_of_shipments: details['NumberOfShipments']
           })
-        end  
+        end
       end
 
       def parse_error(klass, result)
