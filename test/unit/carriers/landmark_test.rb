@@ -32,13 +32,26 @@ class LandmarkTest < Test::Unit::TestCase
     end
   end
 
-  def test_find_tracking_info 
+  def test_find_tracking_info
     mock_response = xml_fixture('landmark/tracking')
     @carrier.expects(:commit).returns(mock_response)
     info = @carrier.find_tracking_info('00000098760')
     assert info.success?
     assert info.test?
     assert info.is_a?(TrackingResponse)
+  end
+
+  def test_build_tracking_request
+    xml = @carrier.send(:build_tracking_request, reference: true)
+    request_as_hash = Hash.from_xml(xml)
+    expected_hash = {
+      "Login"=>{
+        "Username"=>"demoapi", "Password"=>"demo123"
+      },
+      "Reference"=>"tracking_number",
+      "Test"=>"true",
+    }
+    assert_equal(request_as_hash, expected_hash)
   end
 
   def test_find_tracking_info_error
