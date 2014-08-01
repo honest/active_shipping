@@ -159,26 +159,29 @@ module ActiveMerchant
         if result['Errors']
           parse_error(TrackingResponse, result)
         else
-          package = result['Result']['Packages']['Package']
-          #To handle that fact that with one event it parses as a hash.
-          events = [package['Events']['Event']].flatten
-          shipment_events = events.map do |event|
-            time = Time.parse(event['DateTime'].gsub(/(\d{2})\/(\d{2})/, '\2/\1'))
-            shipment_event = ShipmentEvent.new(event['Status'], time, event['Location'])
-            shipment_event.data = event
-            shipment_event
+          package_data = result['Result']['Packages']['Package']
+          wrapped_package = Array.wrap(package_data)
+          shipment_events = wrapped_package.map do |package|
+            #To handle that fact that with one event it parses as a hash.
+            events = [package['Events']['Event']].flatten
+            shipment_events = events.map do |event|
+              time = Time.parse(event['DateTime'].gsub(/(\d{2})\/(\d{2})/, '\2/\1'))
+              shipment_event = ShipmentEvent.new(event['Status'], time, event['Location'])
+              shipment_event.data = event
+              shipment_event
+            end
           end
+          expected_delivery = wrapped_package.map{|package| package['ExpectedDelivery']}.compact.max
+          tracking_numbers = wrapped_package.map{|package| package['TrackingNumber']}.compact
           details = {
             xml: response,
             carrier: @@name,
             status: :success,
             test: test_mode?,
-            shipment_events: shipment_events,
-            tracking_number: package['TrackingNumber']
+            shipment_events: shipment_events.flatten,
+            tracking_number: tracking_numbers,
+            scheduled_delivery_date: expected_delivery
           }
-          if package['ExpectedDelivery'].present?
-            details[:scheduled_delivery_date] = Date.parse(package['ExpectedDelivery'])
-          end
           TrackingResponse.new(true, 'Successfully received package data', result, details)
         end
       end
