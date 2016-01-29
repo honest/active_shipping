@@ -1,28 +1,29 @@
+# -*- coding: utf-8 -*-
 module ActiveMerchant
   module Shipping
     class DHL < Carrier
       cattr_reader :name
 
-      @@name = "DHL"
+      @@name = 'DHL'
 
       URL = 'https://api.dhlglobalmail.com'
+      HEADER = {'Accept' => 'application/json', 'Content-Type' => 'application/json;charset=UTF-8'}
 
       def requirements
-        [:username, :password]
+        [:username, :password, :client_id]
       end
 
       def initialize(options = {})
         super options
-        @base_header = {'Accept' => 'application/json', 'Content-Type' => 'application/json;charset=UTF-8'}
         @retries = 0
         @threshold = options[:threshold] || 1
+        @private_token = options[:override_token] if options.has_key? :override_token
       end
-
 
       def find_tracking_info(number)
         token = get_token
-        url = "#{URL}/v1/mailitems/track.json?access_token=#{token}&client_id=#{@options[:client_id]}&number=#{number}"
-        response = Response.new(ssl_get(url, headers=@base_header))
+        url = get_tracking_url(number, token)
+        response = call_api(url)
         puts response.json
         if response.invalid_token?
           clear_token
@@ -32,6 +33,10 @@ module ActiveMerchant
         end
         @retries = 0
         parse_tracking_response(response)
+      end
+
+      def get_tracking_url(number, token)
+        "#{URL}/v1/mailitems/track.json?access_token=#{token}&client_id=#{@options[:client_id]}&number=#{number}"
       end
 
       def parse_tracking_response(response)
@@ -46,7 +51,8 @@ module ActiveMerchant
         TrackingResponse.new(success, message, response.data,
                              :carrier => @@name,
                              :status => response.status,
-                             :shipment_events => shipment_events
+                             :shipment_events => shipment_events,
+                             :last_request => @last_request
         )
       end
 
@@ -55,6 +61,17 @@ module ActiveMerchant
         description = event['description']
         time = Time.strptime("#{event['time']} #{event['date']}", '%H:%M:%S %Y-%m-%d' )
         {:code => code, :description => description, :time => time}
+      end
+
+      def retrieve_token
+        url = get_token_url
+        response = call_api(url)
+        raise ResponseError('Unable to authenticate, got this message: ' + response.error_message) unless response.ok?
+        response.data['access_token']
+      end
+
+      def get_token_url
+        "#{URL}/v1/auth/access_token.json?username=#{@options[:username]}&password=#{@options[:password]}"
       end
 
       private
@@ -67,11 +84,17 @@ module ActiveMerchant
         @private_token ||= retrieve_token
       end
 
-      def retrieve_token
-        url = "#{@root}/v1/auth/access_token.json?username=#{@options[:username]}&password=#{@options[:password]}"
-        response = Response.new(ssl_get(url, headers=@base_header))
-        raise ResponseError('Unable to authenticate, got this message: ' + response.error_message) unless response.ok?
-        response.data['access_token']
+
+
+      def call_api(url)
+        @last_request = url
+        response = nil
+        begin
+          response = Response.new(RestClient.get(url, @base_header))
+        rescue RestClient::BadRequest => e
+          ap e
+        end
+        response
       end
 
       class Response
