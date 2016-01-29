@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 module ActiveMerchant
   module Shipping
-    class Dhl < Carrier
+    class DHL < Carrier
       cattr_reader :name
 
       @@name = 'DHL'
