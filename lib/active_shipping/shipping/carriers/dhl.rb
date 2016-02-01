@@ -4,6 +4,9 @@ module ActiveMerchant
     class DHL < Carrier
       cattr_reader :name
 
+      class AuthenticationError < StandardError
+      end
+
       @@name = 'DHL'
 
       URL = 'https://api.dhlglobalmail.com'
@@ -93,6 +96,7 @@ module ActiveMerchant
           response = Response.new(RestClient.get(url, @base_header))
         rescue RestClient::BadRequest => e
           ap e
+          throw AuthenticationError('Unable to authenticate:' + '')
         end
         response
       end
