@@ -4,7 +4,7 @@ module ActiveMerchant
     class DHL < Carrier
       cattr_reader :name
 
-      class AuthenticationError < StandardError
+      class APIError < StandardError
       end
 
       @@name = 'DHL'
@@ -27,12 +27,11 @@ module ActiveMerchant
         token = get_token
         url = get_tracking_url(number, token)
         response = call_api(url)
-        puts response.json
         if response.invalid_token?
           clear_token
-          raise ResponseError('Max retries of authentication exceeded, could not get access token') unless @retries < @threshold
+          raise APIError, 'Max retries of authentication exceeded, could not get access token' unless @retries < @threshold
           @retries += 1
-          call_tracking(number)
+          find_tracking_info(number)
         end
         @retries = 0
         parse_tracking_response(response)
@@ -48,12 +47,12 @@ module ActiveMerchant
         shipment_events = []
 
         if success
-          shipment_events = response.events.map(&:access_token)
+          shipment_events = response.events.map(&self.method(:parse_event))
+          shipment_events = shipment_events.sort_by{|se| se[:time]}
         end
 
-        TrackingResponse.new(success, message, response.data,
+        TrackingResponse.new(true, message, response.data || response.error.first,
                              :carrier => @@name,
-                             :status => response.status,
                              :shipment_events => shipment_events,
                              :last_request => @last_request
         )
@@ -87,24 +86,44 @@ module ActiveMerchant
         @private_token ||= retrieve_token
       end
 
-
-
       def call_api(url)
         @last_request = url
         response = nil
         begin
           response = Response.new(RestClient.get(url, @base_header))
         rescue RestClient::BadRequest => e
-          ap e
-          throw AuthenticationError('Unable to authenticate:' + '')
+          #if we can't parse what the api returns just include the whole thing
+          if /meta/.match(e.response)
+            response = Response.new e.response
+            return handle_error_response(response)
+          else
+            raise APIError, e.message
+          end
         end
         response
+      end
+
+      def handle_error_response(response)
+        case response.error_type
+          when 'INVALID_LOGIN'
+            raise APIError, 'Unable to authenticate:' + response.error_message
+          when 'NO_DATA'
+            response
+          when 'INVALID_TOKEN'
+            response
+          when 'VALIDATION_ERROR'
+            raise APIError, 'Bad format of tracking number:' + response.error_message
+          else
+            raise APIError, 'Error calling DHL Tracking API:' + response.error_message
+        end
       end
 
       class Response
         attr_accessor :json
         attr_accessor :meta
         attr_accessor :data
+        attr_accessor :status
+        attr_accessor :error
 
         def initialize (raw_content)
           @json = JSON.parse(raw_content)
@@ -123,7 +142,11 @@ module ActiveMerchant
         end
 
         def error_message
-          ok? && @error && @error.first['error_message']
+          !ok? && @error && @error.first['error_message']
+        end
+
+        def error_type
+          !ok? && @error && @error.first['error_type']
         end
 
         def events
