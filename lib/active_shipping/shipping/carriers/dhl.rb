@@ -18,6 +18,7 @@ module ActiveMerchant
 
       def initialize(options = {})
         super options
+        @last_request_url = ''
         @retries = 0
         @threshold = options[:threshold] || 1
         @private_token = options[:override_token] if options.has_key? :override_token
@@ -29,16 +30,14 @@ module ActiveMerchant
         response = call_api(url)
         if response.invalid_token?
           clear_token
-          raise APIError, 'Max retries of authentication exceeded, could not get access token' unless @retries < @threshold
+          if @retries >= @threshold
+            raise APIError, 'DHL: Max retries of authentication exceeded, could not get access token'
+          end
           @retries += 1
           find_tracking_info(number)
         end
         @retries = 0
         parse_tracking_response(response)
-      end
-
-      def get_tracking_url(number, token)
-        "#{URL}/v1/mailitems/track.json?access_token=#{token}&client_id=#{@options[:client_id]}&number=#{number}"
       end
 
       def parse_tracking_response(response)
@@ -47,14 +46,14 @@ module ActiveMerchant
         shipment_events = []
 
         if success
-          shipment_events = response.events.map(&self.method(:parse_event))
+          shipment_events = response.events.map{|e| parse_event(e) }
           shipment_events = shipment_events.sort_by{|se| se[:time]}
         end
 
         TrackingResponse.new(true, message, response.data || response.error.first,
                              :carrier => @@name,
                              :shipment_events => shipment_events,
-                             :last_request => @last_request
+                             :last_request => @last_request_url
         )
       end
 
@@ -68,8 +67,12 @@ module ActiveMerchant
       def retrieve_token
         url = get_token_url
         response = call_api(url)
-        raise ResponseError('Unable to authenticate, got this message: ' + response.error_message) unless response.ok?
+        raise APIError('DHL: Unable to authenticate, got this message: ' + response.error_message) if !response.ok?
         response.data['access_token']
+      end
+
+      def get_tracking_url(number, token)
+        "#{URL}/v1/mailitems/track.json?access_token=#{token}&client_id=#{@options[:client_id]}&number=#{number}"
       end
 
       def get_token_url
@@ -87,18 +90,20 @@ module ActiveMerchant
       end
 
       def call_api(url)
-        @last_request = url
+        @last_request_url = url
         response = nil
         begin
-          response = Response.new(RestClient.get(url, @base_header))
+          response = DHLResponse.new(RestClient.get(url, HEADER))
         rescue RestClient::BadRequest => e
           #if we can't parse what the api returns just include the whole thing
           if /meta/.match(e.response)
-            response = Response.new e.response
+            response = DHLResponse.new e.response
             return handle_error_response(response)
           else
             raise APIError, e.message
           end
+        rescue RestClient::Exception => e
+          raise APIError, "DHL: Error calling api #{e.message} : #{e.response}"
         end
         response
       end
@@ -106,19 +111,19 @@ module ActiveMerchant
       def handle_error_response(response)
         case response.error_type
           when 'INVALID_LOGIN'
-            raise APIError, 'Unable to authenticate:' + response.error_message
+            raise APIError, 'DHL: Unable to authenticate:' + response.error_message
           when 'NO_DATA'
             response
           when 'INVALID_TOKEN'
             response
           when 'VALIDATION_ERROR'
-            raise APIError, 'Bad format of tracking number:' + response.error_message
+            raise APIError, 'DHL: Bad format of tracking number:' + response.error_message
           else
-            raise APIError, 'Error calling DHL Tracking API:' + response.error_message
+            raise APIError, 'DHL: Error calling Tracking API:' + response.error_message
         end
       end
 
-      class Response
+      class DHLResponse
         attr_accessor :json
         attr_accessor :meta
         attr_accessor :data
