@@ -69,7 +69,7 @@ describe ActiveMerchant::Shipping::DHL do
           let (:status) {200}
 
           it {expect(response.shipment_events.count).to be > 0}
-          it {expect(response.shipment_events.last[:code]).to eql(600)}
+          it {expect(response.shipment_events.last.name).to eql('Delivered')}
         end
 
         context 'tracking number not found' do

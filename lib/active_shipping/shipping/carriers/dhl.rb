@@ -47,7 +47,7 @@ module ActiveMerchant
 
         if success
           shipment_events = response.events.map{|e| parse_event(e) }
-          shipment_events = shipment_events.sort_by{|se| se[:time]}
+          shipment_events = shipment_events.sort_by{|se| se.time}
         end
 
         TrackingResponse.new(true, message, response.data || response.error.first,
@@ -58,10 +58,10 @@ module ActiveMerchant
       end
 
       def parse_event(event)
-        code = event['id']
-        description = event['description']
-        time = Time.strptime("#{event['time']} #{event['date']}", '%H:%M:%S %Y-%m-%d' )
-        {:code => code, :description => description, :time => time}
+        name = event['description']
+        location = event['location']
+        time = Time.strptime("#{event['time']} #{event['date']}", '%H:%M:%S %Y-%m-%d')
+        ShipmentEvent.new(name, time, location)
       end
 
       def retrieve_token
