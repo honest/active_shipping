@@ -1,0 +1,84 @@
+{
+  "meta": {
+    "links": {
+      "prev": "",
+      "next": ""
+    },
+    "total": 1,
+    "limit": 1,
+    "offset": 0,
+    "timestamp": "2014-04-10T23:08:56-04:00",
+    "code": 200
+  },
+  "data": {
+    "mailItems": [
+      {
+        "recipient": {
+          "address2": "",
+          "signedForName": "signedforname"
+        },
+        "events": [
+          {
+            "location": "Pulaski,NY,US",
+            "time": "11:53:00",
+            "postalCode": "13142",
+            "description": "Delivered",
+            "country": "US",
+            "date": "2014-03-26",
+            "id": 600,
+            "timeZone": "ET"
+          },
+          {
+            "location": "Pulaski,NY,US",
+            "time": "08:20:00",
+            "postalCode": "13142",
+            "description": "OutforDelivery",
+            "country": "US",
+            "date": "2014-03-26",
+            "id": 598,
+            "timeZone": "ET"
+          },
+          {
+            "location": "Pulaski,NY,US",
+            "time": "14:02:00",
+            "postalCode": "13142",
+            "description": "ArrivalatPostOffice",
+            "country": "US",
+            "date": "2014-03-25",
+            "id": 520,
+            "timeZone": "ET"
+          },
+          {
+            "location": "Hebron,KY,US",
+            "time": "15:56:17",
+            "postalCode": "41048",
+            "description": "DepartureDHLeCommerceFacility",
+            "country": "US",
+            "date": "2014-03-22",
+            "id": 300,
+            "timeZone": "ET"
+          },
+          {
+            "location": "Hebron,KY,US",
+            "time": "12:10:05",
+            "postalCode": "41048",
+            "description": "Processed",
+            "country": "US",
+            "date": "2014-03-22",
+            "id": 220,
+            "timeZone": "ET"
+          }
+        ],
+        "pickup": {
+          "account": 5100000,
+          "country": "country"
+        },
+        "mail": {
+          "consignmentNoteNumber": "9999999999",
+          "productCategory": "Priority",
+          "mailIdentifier": "9999999999"
+        }
+      }
+    ]
+  }
+}

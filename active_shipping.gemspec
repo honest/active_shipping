@@ -26,7 +26,9 @@ Gem::Specification.new do |s|
   s.add_development_dependency('mocha')
   s.add_development_dependency('timecop')
   s.add_development_dependency('nokogiri')
-
+  s.add_development_dependency('rspec')
+  s.add_development_dependency('rest-client')
+  s.add_development_dependency('webmock')
   s.files        = Dir.glob("lib/**/*") + %w(MIT-LICENSE README.markdown CHANGELOG)
   s.require_path = 'lib'
 end
