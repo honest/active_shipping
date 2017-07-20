@@ -366,9 +366,14 @@ module ActiveMerchant
               # Required element. The company whose account is responsible for the label(s).
               build_location_node(xml, 'Shipper', shipper, options)
 
-              if options[:saturday_delivery]
-                xml.ShipmentServiceOptions do
+              xml.ShipmentServiceOptions do
+                if options[:saturday_delivery]
                   xml.SaturdayDelivery
+                end
+                if options[:return] && options[:return_service_code].to_i == 8
+                  xml.LabelDelivery do
+                    xml.LabelLinksIndicator
+                  end
                 end
               end
 
@@ -908,7 +913,10 @@ module ActiveMerchant
         packages = response_info["ShipmentResults"]["PackageResults"]
         packages = [packages] if Hash === packages
         labels = packages.map do |package|
-          Label.new(package["TrackingNumber"], Base64.decode64(package["LabelImage"]["GraphicImage"]))
+          img_data = if package["LabelImage"]
+            Base64.decode64(package["LabelImage"]["GraphicImage"])
+          end
+          Label.new(package["TrackingNumber"], img_data, response_info["ShipmentResults"]["LabelURL"])
         end
 
         LabelResponse.new(success, message, response_info, {labels: labels})
