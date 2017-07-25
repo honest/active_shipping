@@ -2,6 +2,7 @@ module ActiveMerchant #:nodoc:
   module Shipping
     class ShipmentEvent
       attr_reader :name, :time, :location, :message, :type_code
+      attr_accessor :data
 
       def initialize(name, time, location, message = nil, type_code = nil)
         @name, @time, @location, @message, @type_code = name, time, location, message, type_code
