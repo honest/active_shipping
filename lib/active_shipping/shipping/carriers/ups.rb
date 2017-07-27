@@ -112,6 +112,16 @@ module ActiveMerchant
         "20" => "UPS Pack & Collect Service 3-Attempt Box 5",
       }
 
+      QUANTUM_VIEW_NOTIFICATION_CODES = {
+        "5" => "QV In-transit Notification", # return shipments only.
+        "6" => "QV Ship Notification", # forward moving shipments only.
+        "7" => "QV Exception Notification",
+        "8" => "QV Delivery Notification",
+        "2" => "Return Notification or Label Creation Notification",
+        "012" => "Alternate Delivery Location Notification",
+        "013" => "UAP Shipper Notification"
+      }
+
       TRACKING_STATUS_CODES = HashWithIndifferentAccess.new(
         'I' => :in_transit,
         'D' => :delivered,
@@ -323,6 +333,7 @@ module ActiveMerchant
       # * negotiated_rates: if truthy negotiated rates will be requested from ups. Only valid if shipper account has negotiated rates.
       # * delivery_confirmation: Can be set to any key from SHIPMENT_DELIVERY_CONFIRMATION_CODES. Can also be set on package level via package.options
       # * bill_third_party: When truthy, bill an account other than the shipper's. Specified by billing_(account, zip and country)
+      # * quantum_view_notifications: Array of hashes with :code => a key from QUANTUM_VIEW_NOTIFICATION_CODES and :email => target customer email
       def build_shipment_request(origin, destination, packages, options={})
         packages = Array(packages)
         shipper = options[:shipper] || origin
@@ -373,6 +384,14 @@ module ActiveMerchant
                 if options[:return] && options[:return_service_code].to_i == 8
                   xml.LabelDelivery do
                     xml.LabelLinksIndicator
+                  end
+                end
+                Array(options[:quantum_view_notifications]).each do |notification|
+                  xml.Notification do
+                    xml.NotificationCode(notification[:code])
+                    xml.Email do
+                      xml.EmailAddress(notification[:email])
+                    end
                   end
                 end
               end
