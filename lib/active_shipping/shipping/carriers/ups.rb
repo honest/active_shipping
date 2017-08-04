@@ -328,7 +328,7 @@ module ActiveMerchant
       # * optional_processing: 'validate' (blank) or 'nonvalidate' or blank
       # * paperless_invoice: set to truthy if using paperless invoice to ship internationally
       # * terms_of_shipment: used with paperless invoice to specify who pays duties and taxes
-      # * reference_numbers: Array of hashes with :value => a reference number value and optionally :code => reference number type
+      # * reference_numbers: Array of hashes with :value => a reference number value and optionally :code => reference number type and boolean :barcode => indicates :value will be barcoded on the label
       # * prepay: if truthy the shipper will be bill immediatly. Otherwise the shipper is billed when the label is used.
       # * negotiated_rates: if truthy negotiated rates will be requested from ups. Only valid if shipper account has negotiated rates.
       # * delivery_confirmation: Can be set to any key from SHIPMENT_DELIVERY_CONFIRMATION_CODES. Can also be set on package level via package.options
@@ -666,6 +666,9 @@ module ActiveMerchant
             xml.ReferenceNumber do
               xml.Code(reference_number_info[:code] || "")
               xml.Value(reference_number_info[:value])
+              if reference_number_info[:barcode]
+                xml.BarCodeIndicator
+              end
             end
           end
 
