@@ -17,6 +17,12 @@ module ActiveMerchant #:nodoc:
         end
       end      
     end
+
+    class ResponseContentError < Error
+      def initialize(exception, content_body = nil)
+        super([exception.message, content_body].compact.join(" \n\n"))
+      end
+    end
     
     class Response
       
