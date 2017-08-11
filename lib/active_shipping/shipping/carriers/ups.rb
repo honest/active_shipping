@@ -464,7 +464,7 @@ module ActiveMerchant
                 Array(options[:quantum_view_notifications]).each do |notification|
                   xml.Notification do
                     xml.NotificationCode(notification[:code])
-                    xml.EMail do
+                    xml.EMailMessage do
                       xml.EMailAddress(notification[:email])
                     end
                   end
