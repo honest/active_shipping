@@ -602,7 +602,7 @@ module ActiveMerchant
             # StateProvinceCode required for negotiated rates but not otherwise, for some reason
             xml.PostalCode(location.postal_code) unless location.postal_code.blank?
             xml.CountryCode(mapped_country_code(location.country_code(:alpha2))) unless location.country_code(:alpha2).blank?
-            xml.ResidentialAddressIndicator(true) unless location.commercial? # the default should be that UPS returns residential rates for destinations that it doesn't know about
+            xml.ResidentialAddressIndicator unless location.commercial? # the default should be that UPS returns residential rates for destinations that it doesn't know about
             # not implemented: Shipment/(Shipper|ShipTo|ShipFrom)/Address/ResidentialAddressIndicator element
           end
         end
@@ -615,7 +615,7 @@ module ActiveMerchant
             xml.PoliticalDivision1(location.province)
             xml.CountryCode(mapped_country_code(location.country_code(:alpha2)))
             xml.PostcodePrimaryLow(location.postal_code)
-            xml.ResidentialAddressIndicator(true) unless location.commercial?
+            xml.ResidentialAddressIndicator unless location.commercial?
           end
         end
       end
