@@ -377,25 +377,6 @@ module ActiveMerchant
               # Required element. The company whose account is responsible for the label(s).
               build_location_node(xml, 'Shipper', shipper, options)
 
-              xml.ShipmentServiceOptions do
-                if options[:saturday_delivery]
-                  xml.SaturdayDelivery
-                end
-                if options[:return] && options[:return_service_code].to_i == 8
-                  xml.LabelDelivery do
-                    xml.LabelLinksIndicator
-                  end
-                end
-                Array(options[:quantum_view_notifications]).each do |notification|
-                  xml.Notification do
-                    xml.NotificationCode(notification[:code])
-                    xml.EMail do
-                      xml.EMailAddress(notification[:email])
-                    end
-                  end
-                end
-              end
-
               if options[:negotiated_rates]
                 xml.RateInformation do
                   xml.NegotiatedRatesIndicator
@@ -460,6 +441,10 @@ module ActiveMerchant
               end
 
               xml.ShipmentServiceOptions do
+                if options[:saturday_delivery]
+                  xml.SaturdayDelivery
+                end
+
                 if delivery_confirmation = options[:delivery_confirmation]
                   xml.DeliveryConfirmation do
                     xml.DCISType(SHIPMENT_DELIVERY_CONFIRMATION_CODES[delivery_confirmation])
@@ -468,6 +453,21 @@ module ActiveMerchant
 
                 if options[:international]
                   build_international_forms(xml, origin, destination, packages, options)
+                end
+
+                if options[:return] && options[:return_service_code].to_i == 8
+                  xml.LabelDelivery do
+                    xml.LabelLinksIndicator
+                  end
+                end
+
+                Array(options[:quantum_view_notifications]).each do |notification|
+                  xml.Notification do
+                    xml.NotificationCode(notification[:code])
+                    xml.EMail do
+                      xml.EMailAddress(notification[:email])
+                    end
+                  end
                 end
               end
 
