@@ -377,25 +377,6 @@ module ActiveMerchant
               # Required element. The company whose account is responsible for the label(s).
               build_location_node(xml, 'Shipper', shipper, options)
 
-              xml.ShipmentServiceOptions do
-                if options[:saturday_delivery]
-                  xml.SaturdayDelivery
-                end
-                if options[:return] && options[:return_service_code].to_i == 8
-                  xml.LabelDelivery do
-                    xml.LabelLinksIndicator
-                  end
-                end
-                Array(options[:quantum_view_notifications]).each do |notification|
-                  xml.Notification do
-                    xml.NotificationCode(notification[:code])
-                    xml.Email do
-                      xml.EmailAddress(notification[:email])
-                    end
-                  end
-                end
-              end
-
               if options[:negotiated_rates]
                 xml.RateInformation do
                   xml.NegotiatedRatesIndicator
@@ -460,6 +441,10 @@ module ActiveMerchant
               end
 
               xml.ShipmentServiceOptions do
+                if options[:saturday_delivery]
+                  xml.SaturdayDelivery
+                end
+
                 if delivery_confirmation = options[:delivery_confirmation]
                   xml.DeliveryConfirmation do
                     xml.DCISType(SHIPMENT_DELIVERY_CONFIRMATION_CODES[delivery_confirmation])
@@ -468,6 +453,21 @@ module ActiveMerchant
 
                 if options[:international]
                   build_international_forms(xml, origin, destination, packages, options)
+                end
+
+                if options[:return] && options[:return_service_code].to_i == 8
+                  xml.LabelDelivery do
+                    xml.LabelLinksIndicator
+                  end
+                end
+
+                Array(options[:quantum_view_notifications]).each do |notification|
+                  xml.Notification do
+                    xml.NotificationCode(notification[:code])
+                    xml.EMailMessage do
+                      xml.EMailAddress(notification[:email])
+                    end
+                  end
                 end
               end
 
@@ -602,7 +602,7 @@ module ActiveMerchant
             # StateProvinceCode required for negotiated rates but not otherwise, for some reason
             xml.PostalCode(location.postal_code) unless location.postal_code.blank?
             xml.CountryCode(mapped_country_code(location.country_code(:alpha2))) unless location.country_code(:alpha2).blank?
-            xml.ResidentialAddressIndicator(true) unless location.commercial? # the default should be that UPS returns residential rates for destinations that it doesn't know about
+            xml.ResidentialAddressIndicator unless location.commercial? # the default should be that UPS returns residential rates for destinations that it doesn't know about
             # not implemented: Shipment/(Shipper|ShipTo|ShipFrom)/Address/ResidentialAddressIndicator element
           end
         end
@@ -615,7 +615,7 @@ module ActiveMerchant
             xml.PoliticalDivision1(location.province)
             xml.CountryCode(mapped_country_code(location.country_code(:alpha2)))
             xml.PostcodePrimaryLow(location.postal_code)
-            xml.ResidentialAddressIndicator(true) unless location.commercial?
+            xml.ResidentialAddressIndicator unless location.commercial?
           end
         end
       end
