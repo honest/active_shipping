@@ -165,9 +165,7 @@ module ActiveShipping
           events = [package['Events']['Event']].flatten
           shipment_events = events.map do |event|
             time = Time.parse(event['DateTime'].gsub(/(\d{2})\/(\d{2})/, '\2/\1'))
-            shipment_event = ShipmentEvent.new(event['Status'], time, event['Location'])
-            shipment_event.data = event
-            shipment_event
+            ShipmentEvent.new(event['Status'], time, event['Location'], nil, event['EventCode'])
           end
         end
         expected_delivery = wrapped_package.map{|package| package['ExpectedDelivery']}.compact.max
