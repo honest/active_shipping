@@ -35,3 +35,4 @@ ActiveShipping::Carriers.register :Correios,         'active_shipping/carriers/c
 ActiveShipping::Carriers.register :AustraliaPost,    'active_shipping/carriers/australia_post'
 ActiveShipping::Carriers.register :UPS,              'active_shipping/carriers/ups'
 ActiveShipping::Carriers.register :Landmark,         'active_shipping/carriers/landmark'
+ActiveShipping::Carriers.register :DHL,              'active_shipping/carriers/dhl'
